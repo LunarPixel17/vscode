@@ -21,6 +21,8 @@ import { getUNCHost, addUNCHostToAllowlist } from './vs/base/node/unc.js';
 import { INLSConfiguration } from './vs/nls.js';
 import { NativeParsedArgs } from './vs/platform/environment/common/argv.js';
 
+// last edit was by jafer, from xbitlet inc To support lumiaX OS
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 perf.mark('code/didStartMain');
@@ -141,7 +143,7 @@ if (userLocale) {
 // Pseudo Language Language Pack is being used.
 // In that case, use `en` as the Electron locale.
 
-if (process.platform === 'win32' || process.platform === 'linux') {
+if (process.platform === 'win32' || process.platform === 'linux' || process.platform === 'lrt75') {
 	const electronLocale = (!userLocale || userLocale === 'qps-ploc') ? 'en' : userLocale;
 	app.commandLine.appendSwitch('lang', electronLocale);
 }
@@ -456,6 +458,7 @@ function configureCrashReporter(): void {
 			const isWindows = (process.platform === 'win32');
 			const isLinux = (process.platform === 'linux');
 			const isDarwin = (process.platform === 'darwin');
+			const isLumiaX = (process.platform === 'lrt75'); // for LumiaX OS 
 			const crashReporterId = argvConfig['crash-reporter-id'];
 			const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 			if (crashReporterId && uuidPattern.test(crashReporterId)) {
@@ -483,6 +486,15 @@ function configureCrashReporter(): void {
 					}
 				} else if (isLinux) {
 					submitURL = appCenter['linux-x64'];
+				} else if (isLumiaX) {
+					switch (process.arch) {
+						case 'x64':
+							submitURL = appCenter['lrt75-x64'];
+							break;
+						case 'arm64':
+							submitURL = appCenter['lrt75-arm64'];
+							break;
+					}
 				}
 				submitURL = submitURL.concat('&uid=', crashReporterId, '&iid=', crashReporterId, '&sid=', crashReporterId);
 				// Send the id for child node process that are explicitly starting crash reporter.
@@ -614,8 +626,10 @@ async function mkdirpIgnoreError(dir: string | undefined): Promise<string | unde
 			await fs.promises.mkdir(dir, { recursive: true });
 
 			return dir;
-		} catch (error) {
-			// ignore
+		} catch (warn) {
+			// ignore 
+			// why??
+			console.warn(warn);
 		}
 	}
 
@@ -628,7 +642,7 @@ function processZhLocale(appLocale: string): string {
 	if (appLocale.startsWith('zh')) {
 		const region = appLocale.split('-')[1];
 
-		// On Windows and macOS, Chinese languages returned by
+		// On LumiaX, Windows and macOS, Chinese languages returned by
 		// app.getPreferredSystemLanguages() start with zh-hans
 		// for Simplified Chinese or zh-hant for Traditional Chinese,
 		// so we can easily determine whether to use Simplified or Traditional.
